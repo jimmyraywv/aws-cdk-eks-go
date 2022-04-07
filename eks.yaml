@@ -1,0 +1,100 @@
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: cdk-eks
+  region: <REGION>
+  version: "1.21"
+  tags:
+    owner: jimmyray
+    env: dev
+    billing: lob-cc
+
+iam:
+  withOIDC: true
+
+secretsEncryption:
+  keyARN: "<KEY_ARN>"
+
+vpc:
+  id: "vpc-id"
+  cidr: "10.0.0.0/16"
+  subnets:
+    private:
+      private-1:
+        id: "subnet-id"
+        cidr: "10.0.0.0/20"
+        az: <AZ>a
+      private-2:
+        id: "subnet-id"
+        cidr: "10.0.16.0/20"
+        az: <AZ>b
+      private-3:
+        id: "subnet-id"
+        cidr: "10.0.32.0/20"
+        az: <AZ>c
+    public:
+      public-1:
+        id: "subnet-id"
+        cidr: "10.0.48.0/20"
+        az: <AZ>a
+      public-2:
+        id: "subnet-id"
+        cidr: "10.0.64.0/20"
+        az: <AZ>b
+      public-3:
+        id: "subnet-id"
+        cidr: "10.0.80.0/20"
+        az: <AZ>c
+  clusterEndpoints:
+    publicAccess: true
+    privateAccess: true
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["*"]
+
+addons:
+  - name: vpc-cni
+    version: latest
+    attachPolicyARNs:
+      - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+  - name: kube-proxy
+    version: latest
+  - name: coredns
+    version: latest
+
+managedNodeGroups:
+  - name: al2
+    amiFamily: AmazonLinux2
+    labels:
+      owner: jimmy
+      env: dev
+      billing: lob-cc
+    instanceType: m5.large
+    instanceName: apis-al2
+    subnets:
+      - private-1
+      - private-2
+      - private-3
+    minSize: 3
+    desiredCapacity: 3
+    maxSize: 5
+    volumeSize: 100
+    volumeType: gp3
+    volumeEncrypted: true
+    volumeKmsKeyID: <KEY_ID>
+    disableIMDSv1: true
+    disablePodIMDS: true
+    privateNetworking: true # if only 'Private' subnets are given, this must be enabled
+    tags:
+      owner: jimmyray
+      env: dev
+      billing: lob-cc
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::123456789012:policy/KmsKeyUserSsmOps # allows use of ssm-ops KMS key
